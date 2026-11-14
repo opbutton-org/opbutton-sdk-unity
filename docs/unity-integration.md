@@ -12,7 +12,7 @@
 In Unity Editor: **Window → Package Manager → + → Add package from git URL** and enter:
 
 ```
-https://github.com/irov/unitypilot.git
+https://github.com/opbutton-org/opbutton-sdk-unity.git
 ```
 
 Or add directly to `Packages/manifest.json`:
@@ -20,7 +20,7 @@ Or add directly to `Packages/manifest.json`:
 ```json
 {
   "dependencies": {
-    "com.pilot.sdk": "https://github.com/irov/unitypilot.git"
+    "com.opbutton.sdk": "https://github.com/opbutton-org/opbutton-sdk-unity.git"
   }
 }
 ```
@@ -29,29 +29,29 @@ Or add directly to `Packages/manifest.json`:
 
 Clone or download the repository, then add as a local package:
 
-**Window → Package Manager → + → Add package from disk** and select the `package.json` in the `unitypilot` folder.
+**Window → Package Manager → + → Add package from disk** and select the `package.json` in the `opbutton-sdk-unity` folder.
 
 ## Initialization
 
 Add a script to your first scene or use `[RuntimeInitializeOnLoadMethod]`:
 
 ```csharp
-using Pilot.SDK;
+using OpButton.SDK;
 using UnityEngine;
 
-public class PilotSetup : MonoBehaviour
+public class OpButtonSetup : MonoBehaviour
 {
-    [SerializeField] private string serverUrl = "https://pilot.example.com";
-    [SerializeField] private string apiToken = "plt_your_token";
+    [SerializeField] private string serverUrl = "https://opbutton.example.com";
+    [SerializeField] private string apiToken = "opbutton_your_token";
 
     void Awake()
     {
-        var config = new PilotConfig.Builder(serverUrl, apiToken)
+        var config = new OpButtonConfig.Builder(serverUrl, apiToken)
             .SetDeviceName(SystemInfo.deviceModel)
             .SetAutoConnect(true)
             .Build();
 
-        PilotSDK.Initialize(config);
+        OpButtonSDK.Initialize(config);
     }
 }
 ```
@@ -59,15 +59,15 @@ public class PilotSetup : MonoBehaviour
 Or without MonoBehaviour:
 
 ```csharp
-public static class PilotBootstrap
+public static class OpButtonBootstrap
 {
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Init()
     {
-        var config = new PilotConfig.Builder("https://pilot.example.com", "plt_token")
+        var config = new OpButtonConfig.Builder("https://opbutton.example.com", "opbutton_token")
             .Build();
 
-        PilotSDK.Initialize(config);
+        OpButtonSDK.Initialize(config);
     }
 }
 ```
@@ -75,23 +75,23 @@ public static class PilotBootstrap
 ## Configuration
 
 ```csharp
-var sessionAttrs = new PilotSessionAttributeBuilder()
+var sessionAttrs = new OpButtonSessionAttributeBuilder()
     .Put("app_version", Application.version)
     .Put("platform", Application.platform.ToString())
     .PutProvider("scene", () => SceneManager.GetActiveScene().name);
 
-var logConfig = new PilotLogConfigBuilder()
+var logConfig = new OpButtonLogConfigBuilder()
     .SetEnabled(true)
-    .SetLogLevel(PilotLogLevel.Info)
-    .SetAttributes(new PilotLogAttributeBuilder()
+    .SetLogLevel(OpButtonLogLevel.Info)
+    .SetAttributes(new OpButtonLogAttributeBuilder()
         .Put("build", Application.version)
         .PutProvider("scene", () => SceneManager.GetActiveScene().name));
 
-var metricConfig = new PilotMetricConfigBuilder()
+var metricConfig = new OpButtonMetricConfigBuilder()
     .SetEnabled(true)
     .SetSampleIntervalMs(200);
 
-var config = new PilotConfig.Builder(url, token)
+var config = new OpButtonConfig.Builder(url, token)
     .SetDeviceId(SystemInfo.deviceUniqueIdentifier)
     .SetDeviceName(SystemInfo.deviceModel + " (Unity " + Application.unityVersion + ")")
     .SetSessionAttributes(sessionAttrs)
@@ -100,7 +100,7 @@ var config = new PilotConfig.Builder(url, token)
     .SetAutoConnect(true)
     .Build();
 
-PilotSDK.Initialize(config);
+OpButtonSDK.Initialize(config);
 ```
 
 ## Built-in Metrics
@@ -118,7 +118,7 @@ The Unity SDK automatically collects:
 
 ## Thread Safety
 
-- All public API calls (`PilotSDK.Log()`, `PilotSDK.Event()`, etc.) are thread-safe and can be called from any thread.
+- All public API calls (`OpButtonSDK.Log()`, `OpButtonSDK.Event()`, etc.) are thread-safe and can be called from any thread.
 - Action callbacks and session listener methods are dispatched on the **Unity main thread**.
 - Widget creation and UI building should ideally be done from the main thread.
 
@@ -127,11 +127,11 @@ The Unity SDK automatically collects:
 ```csharp
 void OnApplicationQuit()
 {
-    PilotSDK.Shutdown();
+    OpButtonSDK.Shutdown();
 }
 ```
 
-The SDK also hooks `Application.quitting` automatically via the internal `PilotRunner` MonoBehaviour.
+The SDK also hooks `Application.quitting` automatically via the internal `OpButtonRunner` MonoBehaviour.
 
 ---
 

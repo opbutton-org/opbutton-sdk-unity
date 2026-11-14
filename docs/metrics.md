@@ -1,18 +1,18 @@
 # Metrics
 
-Pilot collects time-series performance metrics from your app and displays them as charts on the dashboard.
+OpButton collects time-series performance metrics from your app and displays them as charts on the dashboard.
 
 ## Configuration
 
 ```csharp
-var metricConfig = new PilotMetricConfigBuilder()
+var metricConfig = new OpButtonMetricConfigBuilder()
     .SetEnabled(true)                // default: true
     .SetSampleIntervalMs(200)        // 100–1000 ms (default: 200)
     .SetBufferSize(2000)             // max buffered samples (default: 2000)
     .SetBatchSize(200)               // samples per flush (default: 200)
     .AddCollector(myCollector);
 
-var config = new PilotConfig.Builder(url, token)
+var config = new OpButtonConfig.Builder(url, token)
     .SetMetricConfig(metricConfig)
     .Build();
 ```
@@ -49,9 +49,9 @@ The Unity SDK automatically provides:
 ## Custom metric types
 
 ```csharp
-var loadTime = PilotMetricType.Create("scene_load_time");
-var loadTimeMs = PilotMetricType.Create("scene_load_time", "ms");
-var errors = PilotMetricType.Create("error_count", "errors", PilotMetricAggregation.Counter);
+var loadTime = OpButtonMetricType.Create("scene_load_time");
+var loadTimeMs = OpButtonMetricType.Create("scene_load_time", "ms");
+var errors = OpButtonMetricType.Create("error_count", "errors", OpButtonMetricAggregation.Counter);
 ```
 
 ### Aggregation modes
@@ -67,10 +67,10 @@ var errors = PilotMetricType.Create("error_count", "errors", PilotMetricAggregat
 ### Manual recording
 
 ```csharp
-PilotMetrics metrics = PilotSDK.GetMetrics();
+OpButtonMetrics metrics = OpButtonSDK.GetMetrics();
 
-metrics.Record(PilotMetricType.FPS, 60.0);
-metrics.Record(PilotMetricType.Memory, Profiler.GetTotalAllocatedMemoryLong());
+metrics.Record(OpButtonMetricType.FPS, 60.0);
+metrics.Record(OpButtonMetricType.Memory, Profiler.GetTotalAllocatedMemoryLong());
 metrics.Record(myCustomType, 42.0, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 ```
 
@@ -79,28 +79,28 @@ metrics.Record(myCustomType, 42.0, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(
 Collectors are called automatically on each sample interval:
 
 ```csharp
-public class GameMetricCollector : IPilotMetricCollector
+public class GameMetricCollector : IOpButtonMetricCollector
 {
-    public void Collect(List<PilotMetricEntry> output)
+    public void Collect(List<OpButtonMetricEntry> output)
     {
-        output.Add(new PilotMetricEntry(PilotMetricType.DrawCalls, GetDrawCalls()));
-        output.Add(new PilotMetricEntry(
-            PilotMetricType.Create("entities"), GetEntityCount()));
+        output.Add(new OpButtonMetricEntry(OpButtonMetricType.DrawCalls, GetDrawCalls()));
+        output.Add(new OpButtonMetricEntry(
+            OpButtonMetricType.Create("entities"), GetEntityCount()));
     }
 }
 
 // Add via config
-new PilotMetricConfigBuilder().AddCollector(new GameMetricCollector());
+new OpButtonMetricConfigBuilder().AddCollector(new GameMetricCollector());
 
 // Or at runtime
-PilotSDK.GetMetrics().AddCollector(new GameMetricCollector());
-PilotSDK.GetMetrics().RemoveCollector(collector);
+OpButtonSDK.GetMetrics().AddCollector(new GameMetricCollector());
+OpButtonSDK.GetMetrics().RemoveCollector(collector);
 ```
 
 ## Runtime adjustments
 
 ```csharp
-PilotMetrics metrics = PilotSDK.GetMetrics();
+OpButtonMetrics metrics = OpButtonSDK.GetMetrics();
 
 metrics.SetSampleIntervalMs(500);  // slow down sampling
 metrics.SetBufferSize(5000);       // increase buffer

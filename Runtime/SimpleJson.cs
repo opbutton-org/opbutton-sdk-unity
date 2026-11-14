@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
-namespace Pilot.SDK
+namespace OpButton.SDK
 {
     /// <summary>
-    /// Lightweight JSON helper for the Pilot SDK.
+    /// Lightweight JSON helper for the OpButton SDK.
     /// Wraps Dictionary for object access and provides serialization.
     /// </summary>
     public sealed class SimpleJson

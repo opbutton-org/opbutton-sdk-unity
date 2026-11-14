@@ -1,4 +1,4 @@
-# Pilot SDK for Unity
+# OpButton SDK for Unity
 
 Remote debug panel, logging, and metrics for Unity applications.
 
@@ -16,43 +16,43 @@ Add the following to your `Packages/manifest.json`:
 ```json
 {
   "dependencies": {
-    "com.pilot.sdk": "https://github.com/irov/unitypilot.git"
+    "com.opbutton.sdk": "https://github.com/opbutton-org/opbutton-sdk-unity.git"
   }
 }
 ```
 
 Or in Unity Editor: **Window → Package Manager → + → Add package from git URL** and enter:
 ```
-https://github.com/irov/unitypilot.git
+https://github.com/opbutton-org/opbutton-sdk-unity.git
 ```
 
 ## Quick Start
 
 ```csharp
-using Pilot.SDK;
+using OpButton.SDK;
 using UnityEngine;
 
-public class PilotSetup : MonoBehaviour
+public class OpButtonSetup : MonoBehaviour
 {
     void Awake()
     {
         // 1. Initialize
-        var config = new PilotConfig.Builder("https://pilot.example.com", "plt_your_token")
+        var config = new OpButtonConfig.Builder("https://opbutton.example.com", "opbutton_your_token")
             .SetDeviceId("my-device")
             .SetDeviceName("Unity Editor")
             .Build();
-        PilotSDK.Initialize(config);
+        OpButtonSDK.Initialize(config);
 
         // 2. Build UI
-        PilotUI ui = PilotSDK.GetUI();
-        PilotTab tab = ui.AddTab("Game Controls");
-        PilotLayout root = tab.Vertical();
+        OpButtonUI ui = OpButtonSDK.GetUI();
+        OpButtonTab tab = ui.AddTab("Game Controls");
+        OpButtonLayout root = tab.Vertical();
 
         root.AddButton("Restart")
             .Variant("contained").Color("error")
             .OnClick(action => {
                 Debug.Log("Restart clicked!");
-                PilotSDK.AcknowledgeAction(action.Id);
+                OpButtonSDK.AcknowledgeAction(action.Id);
             });
 
         root.AddStat("FPS")
@@ -67,15 +67,15 @@ public class PilotSetup : MonoBehaviour
             });
 
         // 3. Send logs
-        PilotSDK.Log(PilotLogLevel.Info, "Game started");
+        OpButtonSDK.Log(OpButtonLogLevel.Info, "Game started");
 
         // 4. Connect (if autoConnect is false)
-        // PilotSDK.Connect();
+        // OpButtonSDK.Connect();
     }
 
     void OnDestroy()
     {
-        PilotSDK.Shutdown();
+        OpButtonSDK.Shutdown();
     }
 }
 ```
@@ -87,9 +87,9 @@ public class PilotSetup : MonoBehaviour
 Build interactive panels with declarative widget builders:
 
 ```csharp
-PilotUI ui = PilotSDK.GetUI();
-PilotTab tab = ui.AddTab("Controls");
-PilotLayout root = tab.Vertical();
+OpButtonUI ui = OpButtonSDK.GetUI();
+OpButtonTab tab = ui.AddTab("Controls");
+OpButtonLayout root = tab.Vertical();
 
 // Buttons
 root.AddButton("Action").OnClick(action => DoAction());
@@ -122,22 +122,22 @@ root.AddSelect("Level")
     .OnChange(action => LoadLevel(action.Payload?.GetString("value")));
 
 // Nested layouts
-PilotLayout row = root.AddHorizontal();
+OpButtonLayout row = root.AddHorizontal();
 row.AddButton("A").OnClick(action => DoA());
 row.AddPadding(1.0);
 row.AddButton("B").OnClick(action => DoB());
 
 // Collapsible sections
-PilotLayout debug = root.AddCollapsible("Debug Options");
+OpButtonLayout debug = root.AddCollapsible("Debug Options");
 debug.AddButton("Clear Cache").OnClick(action => ClearCache());
 ```
 
 ### Logging
 
 ```csharp
-PilotSDK.Log(PilotLogLevel.Info, "Player spawned");
-PilotSDK.Log(PilotLogLevel.Warning, "Low FPS detected", "performance");
-PilotSDK.Log(PilotLogLevel.Error, "Failed to load asset", new Dictionary<string, object> {
+OpButtonSDK.Log(OpButtonLogLevel.Info, "Player spawned");
+OpButtonSDK.Log(OpButtonLogLevel.Warning, "Low FPS detected", "performance");
+OpButtonSDK.Log(OpButtonLogLevel.Error, "Failed to load asset", new Dictionary<string, object> {
     { "asset", "player_model.fbx" },
     { "error_code", 404 }
 });
@@ -146,13 +146,13 @@ PilotSDK.Log(PilotLogLevel.Error, "Failed to load asset", new Dictionary<string,
 ### Structured Events
 
 ```csharp
-PilotSDK.Event("level_complete", new Dictionary<string, object> {
+OpButtonSDK.Event("level_complete", new Dictionary<string, object> {
     { "level", 5 },
     { "score", 12500 },
     { "time_seconds", 45.3 }
 });
 
-PilotSDK.ChangeScreen("gameplay", "Level 5");
+OpButtonSDK.ChangeScreen("gameplay", "Level 5");
 ```
 
 ### Metrics
@@ -166,31 +166,31 @@ Built-in metrics collected automatically:
 Add custom metrics:
 
 ```csharp
-PilotSDK.GetMetrics().Record(PilotMetricType.DrawCalls, Camera.main.GetDrawCallsCount());
+OpButtonSDK.GetMetrics().Record(OpButtonMetricType.DrawCalls, Camera.main.GetDrawCallsCount());
 
 // Custom metric type
-var customMetric = PilotMetricType.Create("enemies_alive");
-PilotSDK.GetMetrics().Record(customMetric, activeEnemies.Count);
+var customMetric = OpButtonMetricType.Create("enemies_alive");
+OpButtonSDK.GetMetrics().Record(customMetric, activeEnemies.Count);
 ```
 
 Custom collectors:
 
 ```csharp
-public class GameMetricCollector : IPilotMetricCollector
+public class GameMetricCollector : IOpButtonMetricCollector
 {
-    public void Collect(List<PilotMetricEntry> output)
+    public void Collect(List<OpButtonMetricEntry> output)
     {
-        output.Add(new PilotMetricEntry(PilotMetricType.DrawCalls, GetDrawCalls()));
+        output.Add(new OpButtonMetricEntry(OpButtonMetricType.DrawCalls, GetDrawCalls()));
     }
 }
 
 // In config
-var metricConfig = new PilotMetricConfigBuilder()
+var metricConfig = new OpButtonMetricConfigBuilder()
     .SetEnabled(true)
     .SetSampleIntervalMs(200)
     .AddCollector(new GameMetricCollector());
 
-var config = new PilotConfig.Builder(url, token)
+var config = new OpButtonConfig.Builder(url, token)
     .SetMetricConfig(metricConfig)
     .Build();
 ```
@@ -199,7 +199,7 @@ var config = new PilotConfig.Builder(url, token)
 
 ```csharp
 // Publish product catalog
-PilotSDK.SetInAppProducts(new List<Dictionary<string, object>> {
+OpButtonSDK.SetInAppProducts(new List<Dictionary<string, object>> {
     new Dictionary<string, object> {
         { "product_id", "coins_100" },
         { "price", "$0.99" },
@@ -208,18 +208,18 @@ PilotSDK.SetInAppProducts(new List<Dictionary<string, object>> {
 });
 
 // Track purchases
-PilotSDK.PurchaseInApp("txn_123", new List<string> { "coins_100" });
+OpButtonSDK.PurchaseInApp("txn_123", new List<string> { "coins_100" });
 ```
 
 ### Session Attributes
 
 ```csharp
-var sessionAttrs = new PilotSessionAttributeBuilder()
+var sessionAttrs = new OpButtonSessionAttributeBuilder()
     .Put("app_version", Application.version)
     .Put("platform", Application.platform.ToString())
     .PutProvider("scene", () => UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
 
-var config = new PilotConfig.Builder(url, token)
+var config = new OpButtonConfig.Builder(url, token)
     .SetSessionAttributes(sessionAttrs)
     .Build();
 ```
@@ -227,18 +227,18 @@ var config = new PilotConfig.Builder(url, token)
 ### Session Lifecycle
 
 ```csharp
-public class MySessionListener : IPilotSessionListener
+public class MySessionListener : IOpButtonSessionListener
 {
-    public void OnPilotSessionConnecting() => Debug.Log("Connecting...");
-    public void OnPilotSessionWaitingApproval(string requestId) => Debug.Log("Waiting for approval");
-    public void OnPilotSessionStarted(string sessionToken) => Debug.Log("Session active!");
-    public void OnPilotSessionClosed() => Debug.Log("Session closed");
-    public void OnPilotSessionRejected() => Debug.Log("Connection rejected");
-    public void OnPilotSessionAuthFailed() => Debug.Log("Auth failed - check API token");
-    public void OnPilotSessionError(PilotException e) => Debug.LogError("Error: " + e.Message);
+    public void OnOpButtonSessionConnecting() => Debug.Log("Connecting...");
+    public void OnOpButtonSessionWaitingApproval(string requestId) => Debug.Log("Waiting for approval");
+    public void OnOpButtonSessionStarted(string sessionToken) => Debug.Log("Session active!");
+    public void OnOpButtonSessionClosed() => Debug.Log("Session closed");
+    public void OnOpButtonSessionRejected() => Debug.Log("Connection rejected");
+    public void OnOpButtonSessionAuthFailed() => Debug.Log("Auth failed - check API token");
+    public void OnOpButtonSessionError(OpButtonException e) => Debug.LogError("Error: " + e.Message);
 }
 
-var config = new PilotConfig.Builder(url, token)
+var config = new OpButtonConfig.Builder(url, token)
     .SetSessionListener(new MySessionListener())
     .Build();
 ```
@@ -247,8 +247,8 @@ var config = new PilotConfig.Builder(url, token)
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `baseUrl` | required | Pilot server URL |
-| `apiToken` | required | Project API token (plt_...) |
+| `baseUrl` | required | OpButton server URL |
+| `apiToken` | required | Project API token (opbutton_...) |
 | `deviceId` | auto | Device identifier (defaults to SystemInfo.deviceUniqueIdentifier) |
 | `deviceName` | auto | Device display name (defaults to model + Unity version) |
 | `pollIntervalMs` | 10000 | Approval polling interval (ms) |

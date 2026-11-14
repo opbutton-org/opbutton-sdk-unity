@@ -1,6 +1,6 @@
 # Live Streaming
 
-Pilot supports real-time screen streaming from your Unity app to the dashboard via [LiveKit](https://livekit.io/).
+OpButton supports real-time screen streaming from your Unity app to the dashboard via [LiveKit](https://livekit.io/).
 
 ## Requirements
 
@@ -12,7 +12,7 @@ Pilot supports real-time screen streaming from your Unity app to the dashboard v
 1. A dashboard operator clicks **Start Live** on a session
 2. The backend creates a `live_start` action and generates a LiveKit room + publisher token
 3. The Unity SDK receives the action, fetches publisher credentials from `GET /api/client/session/live/publisher`
-4. `PilotLiveKitPublisher` connects to the LiveKit room and publishes a screen capture track using `ScreenVideoSource`
+4. `OpButtonLiveKitPublisher` connects to the LiveKit room and publishes a screen capture track using `ScreenVideoSource`
 5. The dashboard connects to the same room as a viewer (subscribe-only) and displays the video
 6. The operator can send remote tap and long-press actions, which the SDK dispatches via Unity's `EventSystem`
 
@@ -28,9 +28,9 @@ Dashboard (viewer)  ←→  LiveKit Server  ←→  Unity App (publisher)
 
 | Class | Role |
 |-------|------|
-| `PilotLiveKitPublisher` | Manages LiveKit Room connection, screen capture, and track publishing |
-| `PilotLiveManager` | Orchestrates live lifecycle: handles start/stop/update/tap/longpress actions |
-| `PilotLiveOverlayView` | Renders visual touch feedback (white outer circle + orange inner circle) |
+| `OpButtonLiveKitPublisher` | Manages LiveKit Room connection, screen capture, and track publishing |
+| `OpButtonLiveManager` | Orchestrates live lifecycle: handles start/stop/update/tap/longpress actions |
+| `OpButtonLiveOverlayView` | Renders visual touch feedback (white outer circle + orange inner circle) |
 
 ## Action types
 
@@ -80,7 +80,7 @@ The SDK:
 1. Converts normalized coordinates to pixel coordinates based on `Screen.width` / `Screen.height`
 2. Uses `EventSystem.RaycastAll()` to find the UI element at that position
 3. Dispatches pointer down/up/click events via `ExecuteEvents`
-4. Shows a visual indicator via `PilotLiveOverlayView`
+4. Shows a visual indicator via `OpButtonLiveOverlayView`
 
 ## Events emitted
 

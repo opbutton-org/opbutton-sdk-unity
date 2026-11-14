@@ -1,16 +1,16 @@
 # Widgets
 
-Pilot UI is built with tabs, layouts, and widgets. Each service in your app can add its own tab on the dashboard.
+OpButton UI is built with tabs, layouts, and widgets. Each service in your app can add its own tab on the dashboard.
 
 ## Tabs
 
 ```csharp
-PilotUI ui = PilotSDK.GetUI();
+OpButtonUI ui = OpButtonSDK.GetUI();
 
-PilotTab tab = ui.AddTab("Game Controls");
+OpButtonTab tab = ui.AddTab("Game Controls");
 
 // Retrieve or remove tabs later
-PilotTab existing = ui.GetTab("tab-1");
+OpButtonTab existing = ui.GetTab("tab-1");
 ui.RemoveTab("tab-1");
 ```
 
@@ -19,14 +19,14 @@ ui.RemoveTab("tab-1");
 Every tab starts with a layout direction:
 
 ```csharp
-PilotLayout root = tab.Vertical();   // top-to-bottom
-PilotLayout root = tab.Horizontal(); // left-to-right
+OpButtonLayout root = tab.Vertical();   // top-to-bottom
+OpButtonLayout root = tab.Horizontal(); // left-to-right
 ```
 
 Nest layouts for complex arrangements:
 
 ```csharp
-PilotLayout row = root.AddHorizontal();
+OpButtonLayout row = root.AddHorizontal();
 row.AddButton("Left");
 row.AddPadding(1.0);                 // flexible spacer
 row.AddButton("Right");
@@ -35,7 +35,7 @@ row.AddButton("Right");
 ### Collapsible sections
 
 ```csharp
-PilotLayout section = root.AddCollapsible("Advanced");
+OpButtonLayout section = root.AddCollapsible("Advanced");
 section.AddSwitch("Verbose logging");
 ```
 
