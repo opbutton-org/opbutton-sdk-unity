@@ -2,7 +2,7 @@
     "name": "OpButton.SDK",
     "rootNamespace": "OpButton.SDK",
     "references": [
-        "LiveKit"
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -11,12 +11,6 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [
-        {
-            "name": "io.livekit.livekit-sdk",
-            "expression": "",
-            "define": "OPBUTTON_LIVEKIT"
-        }
-    ],
+    "versionDefines": [],
     "noEngineReferences": false
 }

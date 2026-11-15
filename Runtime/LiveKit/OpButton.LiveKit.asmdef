@@ -1,0 +1,10 @@
+{
+    "name": "OpButton.LiveKit",
+    "rootNamespace": "OpButton.SDK",
+    "references": ["OpButton.SDK", "LiveKit"],
+    "autoReferenced": true,
+    "defineConstraints": ["OPBUTTON_LIVEKIT"],
+    "versionDefines": [
+        {"name": "io.livekit.livekit-sdk", "expression": "", "define": "OPBUTTON_LIVEKIT"}
+    ]
+}

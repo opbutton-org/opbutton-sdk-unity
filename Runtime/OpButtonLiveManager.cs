@@ -12,18 +12,18 @@ namespace OpButton.SDK
         internal LiveModeChangedHandler OnLiveModeChanged;
 
         private readonly OpButtonHttpClient m_httpClient;
-#if OPBUTTON_LIVEKIT
-        private readonly OpButtonLiveKitPublisher m_publisher = new OpButtonLiveKitPublisher();
-#endif
+        private IOpButtonLivePublisher m_publisher;
+        private readonly List<OpButtonPointerGesture> m_gestures = new List<OpButtonPointerGesture>();
         private readonly object m_lock = new object();
 
         private volatile bool m_isLive;
         private LiveSettings m_settings = LiveSettings.Low();
         private OpButtonLiveOverlayView m_overlayView;
 
-        internal OpButtonLiveManager(OpButtonHttpClient httpClient)
+        internal OpButtonLiveManager(OpButtonHttpClient httpClient, IOpButtonLivePublisher publisher = null)
         {
             m_httpClient = httpClient;
+            m_publisher = publisher;
         }
 
         // ── Public action handlers ──
@@ -62,10 +62,7 @@ namespace OpButton.SDK
 
                 // Enable screen share
                 var shareError = EnableScreenShareSync();
-                if (shareError != null)
-                {
-                    OpButtonLog.Warn("Screen share enable failed: {0}", shareError.Message);
-                }
+                if (shareError != null) throw shareError;
 
                 OnLiveModeChanged?.Invoke(true, settings.ActionPollIntervalMs);
 
@@ -200,7 +197,9 @@ namespace OpButton.SDK
             float screenY = (float)(normalizedY * Screen.height);
 
             // Dispatch synthetic pointer event via EventSystem
-            DispatchSyntheticTap(screenX, screenY);
+            var gesture = BeginGesture(screenX, screenY);
+            if (gesture == null) return BuildAck(false, "No input target at the requested position");
+            gesture.Release();
             ShowTapOverlay(screenX, screenY);
 
             OpButtonSDK.Event("live_tap", "live_input", new Dictionary<string, object>
@@ -226,11 +225,13 @@ namespace OpButton.SDK
             float screenX = (float)(normalizedX * Screen.width);
             float screenY = (float)(normalizedY * Screen.height);
 
-            DispatchSyntheticTap(screenX, screenY);
+            var gesture = BeginGesture(screenX, screenY);
+            if (gesture == null) return BuildAck(false, "No input target at the requested position");
+            m_gestures.Add(gesture);
             ShowPressOverlay(screenX, screenY);
 
             // Schedule release after duration
-            OpButtonRunner.Instance.StartCoroutine(DelayedRelease(screenX, screenY, durationMs / 1000f));
+            OpButtonRunner.Instance.StartCoroutine(DelayedRelease(gesture, screenX, screenY, durationMs / 1000f));
 
             OpButtonSDK.Event("live_long_press", "live_input", new Dictionary<string, object>
             {
@@ -270,32 +271,25 @@ namespace OpButton.SDK
                 m_isLive = false;
                 m_settings = LiveSettings.Low();
             }
-
-#if OPBUTTON_LIVEKIT
-            var wait = new ManualResetEventSlim(false);
+            // Never wait for the dispatcher from a lifecycle callback on its own thread.
             OpButtonRunner.RunOnMainThread(() =>
             {
-                try { m_publisher.Stop(); } catch { }
-                wait.Set();
+                m_publisher?.Stop();
+                foreach (var gesture in m_gestures) gesture.Release(cancelled: true);
+                m_gestures.Clear();
+                if (m_overlayView != null) m_overlayView.ClearIndicator();
             });
-            wait.Wait(TimeSpan.FromSeconds(5));
-#endif
-
-            if (m_overlayView != null)
-            {
-                m_overlayView.ClearIndicator();
-            }
         }
 
         private Exception StartPublisherSync(string serverUrl, string token,
             string presetName, int maxDimension, int framesPerSecond)
         {
-#if OPBUTTON_LIVEKIT
             Exception result = null;
             var wait = new ManualResetEventSlim(false);
 
             OpButtonRunner.RunOnMainThread(() =>
             {
+                if (m_publisher == null) m_publisher = OpButtonLivePublisherFactory.Create();
                 m_publisher.Start(serverUrl, token, presetName, maxDimension, framesPerSecond, (error) =>
                 {
                     result = error;
@@ -306,14 +300,10 @@ namespace OpButton.SDK
             if (!wait.Wait(TimeSpan.FromSeconds(15)))
                 return new OpButtonException("LiveKit start timed out");
             return result;
-#else
-            return new OpButtonException("LiveKit is not available (OPBUTTON_LIVEKIT not defined)");
-#endif
         }
 
         private Exception EnableScreenShareSync()
         {
-#if OPBUTTON_LIVEKIT
             Exception result = null;
             var wait = new ManualResetEventSlim(false);
 
@@ -329,14 +319,10 @@ namespace OpButton.SDK
             if (!wait.Wait(TimeSpan.FromSeconds(15)))
                 return new OpButtonException("Screen share enable timed out");
             return result;
-#else
-            return new OpButtonException("LiveKit is not available (OPBUTTON_LIVEKIT not defined)");
-#endif
         }
 
         private Exception UpdateQualitySync(string presetName, int maxDimension, int framesPerSecond, out bool screenShareActive)
         {
-#if OPBUTTON_LIVEKIT
             Exception resultError = null;
             bool resultActive = false;
             var wait = new ManualResetEventSlim(false);
@@ -358,10 +344,6 @@ namespace OpButton.SDK
             }
             screenShareActive = resultActive;
             return resultError;
-#else
-            screenShareActive = false;
-            return new OpButtonException("LiveKit is not available (OPBUTTON_LIVEKIT not defined)");
-#endif
         }
 
         private PublisherSession FetchPublisherSession(string sessionToken, LiveSettings requestedSettings)
@@ -400,29 +382,9 @@ namespace OpButton.SDK
 
         // ── Touch dispatch ──
 
-        private void DispatchSyntheticTap(float screenX, float screenY)
+        private static OpButtonPointerGesture BeginGesture(float screenX, float screenY)
         {
-            var eventSystem = EventSystem.current;
-            if (eventSystem == null) return;
-
-            var pointerData = new PointerEventData(eventSystem)
-            {
-                position = new Vector2(screenX, Screen.height - screenY)
-            };
-
-            var results = new List<RaycastResult>();
-            eventSystem.RaycastAll(pointerData, results);
-
-            if (results.Count > 0)
-            {
-                pointerData.pointerCurrentRaycast = results[0];
-                pointerData.pointerPressRaycast = results[0];
-
-                var target = results[0].gameObject;
-                ExecuteEvents.Execute(target, pointerData, ExecuteEvents.pointerDownHandler);
-                ExecuteEvents.Execute(target, pointerData, ExecuteEvents.pointerUpHandler);
-                ExecuteEvents.Execute(target, pointerData, ExecuteEvents.pointerClickHandler);
-            }
+            return OpButtonPointerGesture.Begin(EventSystem.current, new Vector2(screenX, Screen.height - screenY));
         }
 
         // ── Overlay ──
@@ -448,9 +410,12 @@ namespace OpButton.SDK
             EnsureOverlay().ShowPress(x, y);
         }
 
-        private System.Collections.IEnumerator DelayedRelease(float x, float y, float delaySec)
+        private System.Collections.IEnumerator DelayedRelease(OpButtonPointerGesture gesture, float x, float y, float delaySec)
         {
             yield return new WaitForSecondsRealtime(delaySec);
+            if (!gesture.IsActive) yield break;
+            gesture.Release();
+            m_gestures.Remove(gesture);
             EnsureOverlay().ShowRelease(x, y);
         }
 

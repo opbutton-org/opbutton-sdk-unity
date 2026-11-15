@@ -1,6 +1,6 @@
 {
   "name": "com.opbutton.sdk",
-  "version": "1.0.29",
+  "version": "1.0.30",
   "displayName": "OpButton SDK",
   "description": "Remote debug panel, logging, metrics, and live streaming for Unity applications.",
   "unity": "2020.3",
@@ -17,5 +17,7 @@
     "name": "OpButton"
   },
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "com.unity.ugui": "1.0.0"
+  }
 }

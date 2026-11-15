@@ -10,15 +10,21 @@ using VideoEncoding = LiveKit.Proto.VideoEncoding;
 
 namespace OpButton.SDK
 {
-    internal sealed class OpButtonLiveKitPublisher
+    internal sealed class OpButtonLiveKitPublisher : IOpButtonLivePublisher
     {
         private Room m_room;
         private LocalVideoTrack m_screenTrack;
         private RtcVideoSource m_screenSource;
         private LiveQuality m_currentQuality = LiveQuality.Default();
         private readonly object m_lock = new object();
+        private readonly Func<Room, LiveQuality, Action<Exception>, IEnumerator> m_publishScreen;
 
-        internal void Start(string serverUrl, string participantToken,
+        internal OpButtonLiveKitPublisher(Func<Room, LiveQuality, Action<Exception>, IEnumerator> publishScreen = null)
+        {
+            m_publishScreen = publishScreen ?? DoEnableScreenShare;
+        }
+
+        public void Start(string serverUrl, string participantToken,
             string presetName, int maxDimension, int framesPerSecond,
             Action<Exception> onComplete)
         {
@@ -54,7 +60,7 @@ namespace OpButton.SDK
             onComplete?.Invoke(null);
         }
 
-        internal void EnableScreenShare(Action<Exception> onComplete)
+        public void EnableScreenShare(Action<Exception> onComplete)
         {
             Room activeRoom;
             LiveQuality quality;
@@ -70,7 +76,7 @@ namespace OpButton.SDK
                 return;
             }
 
-            OpButtonRunner.Instance.StartCoroutine(DoEnableScreenShare(activeRoom, quality, onComplete));
+            OpButtonRunner.Instance.StartCoroutine(m_publishScreen(activeRoom, quality, onComplete));
         }
 
         private IEnumerator DoEnableScreenShare(Room room, LiveQuality quality, Action<Exception> onComplete)
@@ -118,7 +124,7 @@ namespace OpButton.SDK
             onComplete?.Invoke(null);
         }
 
-        internal void UpdateQuality(string presetName, int maxDimension, int framesPerSecond,
+        public void UpdateQuality(string presetName, int maxDimension, int framesPerSecond,
             Action<bool, Exception> onComplete)
         {
             Room activeRoom;
@@ -148,7 +154,7 @@ namespace OpButton.SDK
             OpButtonRunner.Instance.StartCoroutine(DoUpdateQuality(activeRoom, nextQuality, onComplete));
         }
 
-        private IEnumerator DoUpdateQuality(Room room, LiveQuality nextQuality,
+        internal IEnumerator DoUpdateQuality(Room room, LiveQuality nextQuality,
             Action<bool, Exception> onComplete)
         {
             LocalVideoTrack oldTrack;
@@ -169,40 +175,16 @@ namespace OpButton.SDK
                 oldSource?.Stop();
             }
 
+            // Yield the complete publish operation, including its server response.
             Exception publishError = null;
-            bool screenShareActive = false;
-
-            EnableScreenShareWithQuality(room, nextQuality, (error) =>
-            {
-                publishError = error;
-                screenShareActive = error == null;
-            });
-
-            // Wait for the callback
-            yield return null;
-
+            yield return m_publishScreen(room, nextQuality, error => publishError = error);
             if (publishError != null)
             {
                 onComplete?.Invoke(false, publishError);
                 yield break;
             }
-
-            lock (m_lock)
-            {
-                m_currentQuality = nextQuality;
-            }
-
-            onComplete?.Invoke(screenShareActive, null);
-        }
-
-        private void EnableScreenShareWithQuality(Room room, LiveQuality quality, Action<Exception> onComplete)
-        {
-            lock (m_lock)
-            {
-                m_currentQuality = quality;
-            }
-
-            OpButtonRunner.Instance.StartCoroutine(DoEnableScreenShare(room, quality, onComplete));
+            lock (m_lock) { m_currentQuality = nextQuality; }
+            onComplete?.Invoke(true, null);
         }
 
         private static RtcVideoSource CreateVideoSource(int maxDimension)
@@ -214,7 +196,7 @@ namespace OpButton.SDK
 #endif
         }
 
-        internal void Stop()
+        public void Stop()
         {
             lock (m_lock)
             {

@@ -2,6 +2,8 @@
 
 Remote debug panel, logging, and metrics for Unity applications.
 
+See [Architecture](docs/architecture.md) for runtime boundaries, delivery receipts, commands and session ownership.
+
 ## Requirements
 
 - Unity 2020.3+
@@ -25,6 +27,8 @@ Or in Unity Editor: **Window → Package Manager → + → Add package from git 
 ```
 https://github.com/opbutton-org/opbutton-sdk-unity.git
 ```
+
+For optional screen streaming, follow [LiveKit setup](docs/live-streaming.md#install-the-optional-adapter).
 
 ## Quick Start
 
@@ -50,7 +54,7 @@ public class OpButtonSetup : MonoBehaviour
 
         root.AddButton("Restart")
             .Variant("contained").Color("error")
-            .OnClick(action => {
+            .OnClickAcknowledge(action => {
                 Debug.Log("Restart clicked!");
                 OpButtonSDK.AcknowledgeAction(action.Id);
             });
@@ -92,7 +96,7 @@ OpButtonTab tab = ui.AddTab("Controls");
 OpButtonLayout root = tab.Vertical();
 
 // Buttons
-root.AddButton("Action").OnClick(action => DoAction());
+root.AddButton("Action").OnClick(() => DoAction());
 
 // Labels with dynamic providers
 root.AddLabel("Status: Idle")
@@ -123,13 +127,13 @@ root.AddSelect("Level")
 
 // Nested layouts
 OpButtonLayout row = root.AddHorizontal();
-row.AddButton("A").OnClick(action => DoA());
+row.AddButton("A").OnClick(() => DoA());
 row.AddPadding(1.0);
-row.AddButton("B").OnClick(action => DoB());
+row.AddButton("B").OnClick(() => DoB());
 
 // Collapsible sections
 OpButtonLayout debug = root.AddCollapsible("Debug Options");
-debug.AddButton("Clear Cache").OnClick(action => ClearCache());
+debug.AddButton("Clear Cache").OnClick(() => ClearCache());
 ```
 
 ### Logging

@@ -48,7 +48,7 @@ root.AddButton("Restart")
     .Variant("contained")   // "contained" | "outlined" | "text"
     .Color("error")          // MUI color: "primary" | "error" | "warning" | "info" | "success"
     .Disabled(false)
-    .OnClick(action => RestartGame());
+    .OnClick(() => RestartGame());
 ```
 
 ### Label

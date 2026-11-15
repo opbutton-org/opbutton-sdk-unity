@@ -2,11 +2,16 @@ using System.Collections.Generic;
 
 namespace OpButton.SDK
 {
+    internal interface IOpButtonPolledWidget
+    {
+        bool PollProvider();
+    }
+
     /// <summary>
     /// Base class for all OpButton UI widgets.
     /// Stores properties as a dictionary for direct serialization.
     /// </summary>
-    public class OpButtonWidget<T> where T : OpButtonWidget<T>
+    public class OpButtonWidget<T> : IOpButtonPolledWidget where T : OpButtonWidget<T>
     {
         protected readonly OpButtonUI m_ui;
         protected readonly int m_internalId;
@@ -57,7 +62,7 @@ namespace OpButton.SDK
                 m_ui.UnregisterProvider(this);
         }
 
-        internal bool PollProvider()
+        bool IOpButtonPolledWidget.PollProvider()
         {
             if (m_provider == null) return false;
             try

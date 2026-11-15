@@ -4,8 +4,29 @@ OpButton supports real-time screen streaming from your Unity app to the dashboar
 
 ## Requirements
 
-- LiveKit Unity SDK (`io.livekit.livekit-sdk`) — added automatically as a package dependency
+- Unity 2022.3+ for the optional LiveKit adapter
+- LiveKit Unity SDK (`io.livekit.livekit-sdk`) 2.1.1, installed explicitly as described below
+- Unity Audio and Screen Capture modules enabled (`com.unity.modules.audio`, `com.unity.modules.screencapture`); these are dependencies of LiveKit's capture code
 - LiveKit server configured on the backend (`livekit_url`, `livekit_api_key`, `livekit_api_secret`)
+
+## Install the optional adapter
+
+The base OpButton package includes UI, logs, metrics and sessions without a LiveKit dependency.
+It declares its uGUI dependency automatically. Add LiveKit to the **host project's** `Packages/manifest.json` when screen streaming is needed:
+
+```json
+{
+  "dependencies": {
+    "com.opbutton.sdk": "https://github.com/opbutton-org/opbutton-sdk-unity.git",
+    "io.livekit.livekit-sdk": "https://github.com/livekit/client-sdk-unity.git#v2.1.1",
+    "com.unity.modules.audio": "1.0.0",
+    "com.unity.modules.screencapture": "1.0.0"
+  }
+}
+```
+
+Git dependencies belong in the host manifest; Unity does not resolve Git URLs in a package's dependency list.
+`OpButton.LiveKit` is a separate assembly enabled when LiveKit is installed. It registers an `IOpButtonLivePublisher` adapter before scene initialization. Without it, streaming commands return an actionable error while other SDK features remain available.
 
 ## How it works
 
@@ -54,13 +75,8 @@ Quality can be adjusted dynamically without restarting the stream.
 
 ## Screen capture
 
-The Unity SDK uses LiveKit's `ScreenVideoSource` which captures the entire screen output. This works on:
-
-- **Windows** — full screen capture
-- **macOS** — full screen capture
-- **Linux** — full screen capture
-- **Android** — MediaProjection (system screen capture)
-- **iOS** — ReplayKit (system screen capture)
+The adapter uses LiveKit's GPU-based `ScreenVideoSource` to capture the Unity render output in players.
+In the Editor it uses the dedicated camera source. It does not capture the operating system desktop or request Android MediaProjection/iOS ReplayKit permission.
 
 ## Remote touch
 

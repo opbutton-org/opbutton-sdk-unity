@@ -10,11 +10,11 @@ namespace OpButton.SDK
     {
         private readonly List<OpButtonTab> m_tabs = new List<OpButtonTab>();
         private readonly Dictionary<int, OpButtonWidgetCallback> m_callbacks = new Dictionary<int, OpButtonWidgetCallback>();
-        private readonly HashSet<object> m_providers = new HashSet<object>();
+        private readonly HashSet<IOpButtonPolledWidget> m_providers = new HashSet<IOpButtonPolledWidget>();
         private int m_idCounter;
         private int m_version = 2;
         private int m_revision = 1;
-        private int m_sentRevision;
+        private volatile int m_sentRevision;
         private readonly object m_lock = new object();
 
         internal OpButtonUI() { }
@@ -99,19 +99,11 @@ namespace OpButton.SDK
 
         internal void PollValues()
         {
-            lock (m_lock)
+            List<IOpButtonPolledWidget> providers;
+            lock (m_lock) { providers = new List<IOpButtonPolledWidget>(m_providers); }
+            foreach (var provider in providers)
             {
-                foreach (var provider in m_providers)
-                {
-                    var method = provider.GetType().GetMethod("PollProvider",
-                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-                    if (method != null)
-                    {
-                        bool changed = (bool)method.Invoke(provider, null);
-                        if (changed)
-                            Interlocked.Increment(ref m_revision);
-                    }
-                }
+                if (provider.PollProvider()) Interlocked.Increment(ref m_revision);
             }
         }
 
@@ -127,9 +119,9 @@ namespace OpButton.SDK
             return m_revision != m_sentRevision;
         }
 
-        internal void MarkSent()
+        internal void MarkSent(int revision)
         {
-            m_sentRevision = m_revision;
+            lock (m_lock) { m_sentRevision = System.Math.Max(m_sentRevision, revision); }
         }
 
         internal bool HasTabs()

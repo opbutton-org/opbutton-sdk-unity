@@ -1,0 +1,6 @@
+{
+    "name": "OpButton.SDK.Tests",
+    "references": ["OpButton.SDK", "UnityEngine.UI"],
+    "includePlatforms": ["Editor"],
+    "optionalUnityReferences": ["TestAssemblies"]
+}

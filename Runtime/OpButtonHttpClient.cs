@@ -10,17 +10,17 @@ namespace OpButton.SDK
     /// Low-level HTTP client for the OpButton server API.
     /// Thread-safe.
     /// </summary>
-    internal sealed class OpButtonHttpClient
+    internal sealed class OpButtonHttpClient : OpButtonPollDelivery.ITransport
     {
         private readonly string m_baseUrl;
         private readonly string m_apiToken;
         private readonly HttpClient m_http;
 
-        internal OpButtonHttpClient(string baseUrl, string apiToken)
+        internal OpButtonHttpClient(string baseUrl, string apiToken, HttpMessageHandler handler = null)
         {
             m_baseUrl = baseUrl;
             m_apiToken = apiToken;
-            m_http = new HttpClient
+            m_http = new HttpClient(handler ?? new HttpClientHandler())
             {
                 Timeout = TimeSpan.FromSeconds(15)
             };
@@ -61,14 +61,14 @@ namespace OpButton.SDK
             return Execute(request).GetBool("ok", false);
         }
 
-        internal SimpleJson SubmitPanel(string sessionToken, Dictionary<string, object> layout)
+        public SimpleJson SubmitPanel(string sessionToken, Dictionary<string, object> layout)
         {
             var body = new Dictionary<string, object> { ["layout"] = layout };
             var request = SessionTokenRequest("/api/client/session/panel", sessionToken, HttpMethod.Post, body);
             return Execute(request);
         }
 
-        internal SimpleJson PollActions(string sessionToken,
+        public SimpleJson PollActions(string sessionToken,
             Dictionary<string, object> changedAttributes,
             List<OpButtonLogEntry> logs,
             List<OpButtonMetricEntry> metrics)

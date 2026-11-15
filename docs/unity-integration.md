@@ -118,9 +118,12 @@ The Unity SDK automatically collects:
 
 ## Thread Safety
 
-- All public API calls (`OpButtonSDK.Log()`, `OpButtonSDK.Event()`, etc.) are thread-safe and can be called from any thread.
+- Logging and event APIs (`OpButtonSDK.Log()`, `OpButtonSDK.Event()`, etc.) are thread-safe. Custom log-attribute providers run on their calling thread and must be thread-safe too.
 - Action callbacks and session listener methods are dispatched on the **Unity main thread**.
-- Widget creation and UI building should ideally be done from the main thread.
+- Initialize the SDK and build or modify panel widgets on the Unity main thread. The SDK captures panel and session-attribute providers there.
+- Custom metric collectors run on a background thread; cache Unity API values on the main thread before exposing them to a collector.
+- Panel and attribute snapshots are acknowledged only after successful delivery. Pending changes survive failures; metric sampling continues during session recovery.
+- See [LiveKit setup](live-streaming.md#install-the-optional-adapter) for the optional media adapter.
 
 ## Shutdown
 
