@@ -23,6 +23,7 @@ namespace OpButton.SDK
         private readonly OpButtonPollDelivery m_delivery;
         private readonly string m_deviceId;
         private readonly string m_deviceName;
+        private readonly OpButtonDeviceCredentialStore m_credentialStore = new OpButtonDeviceCredentialStore();
 
         private readonly List<IOpButtonActionListener> m_actionListeners = new List<IOpButtonActionListener>();
         private readonly List<IOpButtonSessionListener> m_sessionListeners = new List<IOpButtonSessionListener>();
@@ -48,6 +49,8 @@ namespace OpButton.SDK
             m_deviceName = string.IsNullOrEmpty(config.DeviceName)
                 ? SystemInfo.deviceModel + " (Unity " + Application.unityVersion + ")" : config.DeviceName;
             m_httpClient = httpClient ?? new OpButtonHttpClient(config.BaseUrl, config.ApiToken);
+            m_httpClient.SetDeviceSecret(m_credentialStore.GetOrCreate(
+                config.BaseUrl, m_deviceId, config.DeviceSecret));
             m_telemetry = new OpButtonTelemetry(config.LogConfig, m_httpClient, m_metrics);
             m_hostState = new OpButtonHostState(config.SessionAttributes, m_ui);
             m_delivery = new OpButtonPollDelivery(m_httpClient, m_hostState, m_telemetry, IsCurrentSession,
@@ -228,6 +231,15 @@ namespace OpButton.SDK
 
             var attributes = m_hostState.ResolveAllSessionAttributes(cancellation);
             var resp = m_httpClient.Connect(m_deviceId, m_deviceName, attributes);
+            if (!string.IsNullOrEmpty(resp.DeviceSecret))
+            {
+                m_httpClient.SetDeviceSecret(resp.DeviceSecret);
+                OpButtonRunner.InvokeOnMainThread(() =>
+                {
+                    m_credentialStore.Save(m_config.BaseUrl, m_deviceId, resp.DeviceSecret);
+                    return true;
+                }, cancellation: cancellation);
+            }
             cancellation.ThrowIfCancellationRequested();
             m_hostState.AcknowledgeAll(attributes);
             m_requestId = resp.RequestId;

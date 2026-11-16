@@ -18,6 +18,8 @@ namespace OpButton.SDK
         internal readonly OpButtonSessionAttributeBuilder SessionAttributes;
         internal readonly OpButtonLogConfigBuilder LogConfig;
         internal readonly OpButtonMetricConfigBuilder MetricConfig;
+        internal readonly string DeviceSecret;
+        internal readonly bool AllowInsecureLocalhost;
 
         private OpButtonConfig(Builder builder)
         {
@@ -34,6 +36,8 @@ namespace OpButton.SDK
             SessionAttributes = builder.m_sessionAttributes;
             LogConfig = builder.m_logConfig;
             MetricConfig = builder.m_metricConfig;
+            DeviceSecret = builder.m_deviceSecret;
+            AllowInsecureLocalhost = builder.m_allowInsecureLocalhost;
         }
 
         public string GetBaseUrl() => BaseUrl;
@@ -56,6 +60,8 @@ namespace OpButton.SDK
             internal OpButtonSessionAttributeBuilder m_sessionAttributes = new OpButtonSessionAttributeBuilder();
             internal OpButtonLogConfigBuilder m_logConfig = new OpButtonLogConfigBuilder();
             internal OpButtonMetricConfigBuilder m_metricConfig = new OpButtonMetricConfigBuilder();
+            internal string m_deviceSecret;
+            internal bool m_allowInsecureLocalhost;
 
             /// <param name="baseUrl">OpButton server URL, e.g. "https://opbutton.example.com"</param>
             /// <param name="apiToken">Project API token starting with "opbutton_"</param>
@@ -67,6 +73,8 @@ namespace OpButton.SDK
 
             public Builder SetDeviceId(string deviceId) { m_deviceId = deviceId; return this; }
             public Builder SetDeviceName(string deviceName) { m_deviceName = deviceName; return this; }
+            public Builder SetDeviceSecret(string deviceSecret) { m_deviceSecret = deviceSecret; return this; }
+            public Builder SetAllowInsecureLocalhost(bool allow) { m_allowInsecureLocalhost = allow; return this; }
             public Builder SetPollIntervalMs(long ms) { m_pollIntervalMs = ms; return this; }
             public Builder SetActionPollIntervalMs(long ms) { m_actionPollIntervalMs = ms; return this; }
             public Builder SetAutoConnect(bool autoConnect) { m_autoConnect = autoConnect; return this; }
@@ -81,9 +89,36 @@ namespace OpButton.SDK
             {
                 if (string.IsNullOrEmpty(m_baseUrl))
                     throw new System.ArgumentException("baseUrl is required");
-                if (string.IsNullOrEmpty(m_apiToken))
-                    throw new System.ArgumentException("apiToken is required");
+                if (string.IsNullOrEmpty(m_apiToken) || !IsSafeHeaderValue(m_apiToken))
+                    throw new System.ArgumentException(
+                        "apiToken is required and must contain only printable ASCII characters");
+                if (m_pollIntervalMs < 250 || m_pollIntervalMs > 300000
+                    || m_actionPollIntervalMs < 250 || m_actionPollIntervalMs > 300000)
+                    throw new System.ArgumentException("poll intervals must be between 250ms and 300000ms");
+                if (m_deviceSecret != null && (m_deviceSecret.Length < 32
+                    || m_deviceSecret.Length > 256 || !IsSafeHeaderValue(m_deviceSecret)))
+                    throw new System.ArgumentException(
+                        "deviceSecret must contain 32 to 256 printable ASCII characters");
+                if (!System.Uri.TryCreate(m_baseUrl, System.UriKind.Absolute, out var uri)
+                    || !string.IsNullOrEmpty(uri.UserInfo)
+                    || !string.IsNullOrEmpty(uri.Query)
+                    || !string.IsNullOrEmpty(uri.Fragment))
+                    throw new System.ArgumentException(
+                        "baseUrl must not contain credentials, a query, or a fragment");
+                bool local = uri.Host == "localhost" || uri.Host == "127.0.0.1"
+                    || uri.Host == "::1" || uri.Host == "[::1]";
+                if (uri.Scheme != System.Uri.UriSchemeHttps
+                    && !(m_allowInsecureLocalhost && uri.Scheme == System.Uri.UriSchemeHttp && local))
+                    throw new System.ArgumentException(
+                        "baseUrl must use HTTPS; localhost HTTP requires SetAllowInsecureLocalhost(true)");
                 return new OpButtonConfig(this);
+            }
+
+            private static bool IsSafeHeaderValue(string value)
+            {
+                foreach (char character in value)
+                    if (character < 0x21 || character > 0x7e) return false;
+                return true;
             }
         }
     }

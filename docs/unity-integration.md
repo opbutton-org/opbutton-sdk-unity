@@ -12,7 +12,7 @@
 In Unity Editor: **Window → Package Manager → + → Add package from git URL** and enter:
 
 ```
-https://github.com/opbutton-org/opbutton-sdk-unity.git
+https://github.com/opbutton-org/opbutton-sdk-unity.git#<reviewed-release-tag>
 ```
 
 Or add directly to `Packages/manifest.json`:
@@ -20,10 +20,12 @@ Or add directly to `Packages/manifest.json`:
 ```json
 {
   "dependencies": {
-    "com.opbutton.sdk": "https://github.com/opbutton-org/opbutton-sdk-unity.git"
+    "com.opbutton.sdk": "https://github.com/opbutton-org/opbutton-sdk-unity.git#<reviewed-release-tag>"
   }
 }
 ```
+
+Use an immutable reviewed release tag in production, not a moving default branch.
 
 ### Local package
 
@@ -102,6 +104,14 @@ var config = new OpButtonConfig.Builder(url, token)
 
 OpButtonSDK.Initialize(config);
 ```
+
+## Device credential and transport
+
+Every installation generates a random credential before connecting. Android stores it in `noBackupFilesDir`; iOS stores it in an app-private file marked with `SetNoBackupFlag`; other targets use the app-private persistent data directory. It is no longer stored in `PlayerPrefs`. The server stores only a SHA-256 digest.
+
+If the host already owns a platform credential store, generate or load a 32–256 character printable-ASCII value there and pass it with `SetDeviceSecret(...)`. Do not put it in source control or a shared configuration asset.
+
+The server URL must use HTTPS and may not contain credentials, a query, or a fragment. For local loopback development only, call `SetAllowInsecureLocalhost(true)`. When upgrading an installation approved before this protocol, verify and re-approve it once in the dashboard.
 
 ## Built-in Metrics
 

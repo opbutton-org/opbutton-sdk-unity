@@ -18,15 +18,17 @@ Add the following to your `Packages/manifest.json`:
 ```json
 {
   "dependencies": {
-    "com.opbutton.sdk": "https://github.com/opbutton-org/opbutton-sdk-unity.git"
+    "com.opbutton.sdk": "https://github.com/opbutton-org/opbutton-sdk-unity.git#<reviewed-release-tag>"
   }
 }
 ```
 
 Or in Unity Editor: **Window → Package Manager → + → Add package from git URL** and enter:
 ```
-https://github.com/opbutton-org/opbutton-sdk-unity.git
+https://github.com/opbutton-org/opbutton-sdk-unity.git#<reviewed-release-tag>
 ```
+
+Pin an immutable reviewed release tag in production.
 
 For optional screen streaming, follow [LiveKit setup](docs/live-streaming.md#install-the-optional-adapter).
 
@@ -255,9 +257,13 @@ var config = new OpButtonConfig.Builder(url, token)
 | `apiToken` | required | Project API token (opbutton_...) |
 | `deviceId` | auto | Device identifier (defaults to SystemInfo.deviceUniqueIdentifier) |
 | `deviceName` | auto | Device display name (defaults to model + Unity version) |
+| `deviceSecret` | generated | 32–256 character printable-ASCII credential; set only with host secure storage |
+| `allowInsecureLocalhost` | false | Permit plain HTTP only for loopback development URLs |
 | `pollIntervalMs` | 10000 | Approval polling interval (ms) |
 | `actionPollIntervalMs` | 2000 | Action polling interval (ms) |
 | `autoConnect` | true | Connect automatically on Initialize() |
+
+The SDK stores its generated installation credential outside `PlayerPrefs`: Android uses `noBackupFilesDir`, iOS uses an app-private file marked `SetNoBackupFlag`, and other platforms use the app-private persistent data directory. Production URLs require HTTPS and cannot contain credentials, a query, or a fragment. Existing approved installations require one explicit re-approval when upgraded to this protocol.
 
 ## License
 

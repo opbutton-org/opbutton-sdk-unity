@@ -8,12 +8,15 @@ namespace OpButton.SDK
         public string RequestId { get; }
         public string Status { get; }
         public string SessionToken { get; }
+        public string DeviceSecret { get; }
 
-        public OpButtonConnectResponse(string requestId, string status, string sessionToken)
+        public OpButtonConnectResponse(string requestId, string status, string sessionToken,
+            string deviceSecret)
         {
             RequestId = requestId;
             Status = status;
             SessionToken = sessionToken;
+            DeviceSecret = deviceSecret;
         }
 
         public bool IsPending => Status == "pending";
@@ -26,7 +29,8 @@ namespace OpButton.SDK
             return new OpButtonConnectResponse(
                 json.GetString("request_id", ""),
                 json.GetString("status", ""),
-                token
+                token,
+                json.IsNull("device_secret") ? null : json.GetString("device_secret", null)
             );
         }
     }

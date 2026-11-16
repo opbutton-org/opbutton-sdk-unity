@@ -17,7 +17,7 @@ It declares its uGUI dependency automatically. Add LiveKit to the **host project
 ```json
 {
   "dependencies": {
-    "com.opbutton.sdk": "https://github.com/opbutton-org/opbutton-sdk-unity.git",
+    "com.opbutton.sdk": "https://github.com/opbutton-org/opbutton-sdk-unity.git#<reviewed-release-tag>",
     "io.livekit.livekit-sdk": "https://github.com/livekit/client-sdk-unity.git#v2.1.1",
     "com.unity.modules.audio": "1.0.0",
     "com.unity.modules.screencapture": "1.0.0"

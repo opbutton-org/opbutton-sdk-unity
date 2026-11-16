@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
+using System.IO;
 
 namespace OpButton.SDK
 {
@@ -16,15 +17,34 @@ namespace OpButton.SDK
         private readonly string m_apiToken;
         private readonly string m_runId = Guid.NewGuid().ToString("D");
         private readonly HttpClient m_http;
+        private string m_deviceSecret = Guid.NewGuid().ToString("D") + Guid.NewGuid().ToString("D");
+        private const int MaxResponseBytes = 2 * 1024 * 1024;
 
         internal OpButtonHttpClient(string baseUrl, string apiToken, HttpMessageHandler handler = null)
         {
             m_baseUrl = baseUrl;
             m_apiToken = apiToken;
-            m_http = new HttpClient(handler ?? new HttpClientHandler())
+            m_http = new HttpClient(handler ?? new HttpClientHandler { AllowAutoRedirect = false })
             {
                 Timeout = TimeSpan.FromSeconds(15)
             };
+        }
+
+        internal void SetDeviceSecret(string value)
+        {
+            if (!SafeDeviceSecret(value))
+                throw new OpButtonException(
+                    "Device credential must contain 32 to 256 printable ASCII characters");
+            m_deviceSecret = value;
+        }
+
+        private static bool SafeDeviceSecret(string value)
+        {
+            if (string.IsNullOrEmpty(value) || value.Length < 32 || value.Length > 256)
+                return false;
+            foreach (char character in value)
+                if (character < 0x21 || character > 0x7e) return false;
+            return true;
         }
 
         internal void Shutdown()
@@ -41,7 +61,8 @@ namespace OpButton.SDK
             {
                 ["device_id"] = deviceId,
                 ["device_name"] = deviceName,
-                ["run_id"] = m_runId
+                ["run_id"] = m_runId,
+                ["device_secret"] = m_deviceSecret
             };
 
             if (sessionAttributes != null && sessionAttributes.Count > 0)
@@ -54,6 +75,7 @@ namespace OpButton.SDK
         internal OpButtonConnectResponse PollStatus(string requestId)
         {
             var request = ApiTokenRequest("/api/client/poll-status/" + requestId + "?run_id=" + m_runId, HttpMethod.Get);
+            request.Headers.Add("X-Device-Secret", m_deviceSecret);
             return OpButtonConnectResponse.FromDict(Execute(request));
         }
 
@@ -179,28 +201,48 @@ namespace OpButton.SDK
         {
             try
             {
-                var response = m_http.SendAsync(request, CancellationToken.None).GetAwaiter().GetResult();
-                string responseBody = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
-                if (!response.IsSuccessStatusCode)
+                using (request)
+                using (var response = m_http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead,
+                    CancellationToken.None).GetAwaiter().GetResult())
                 {
-                    string detail = responseBody;
-                    try
+                    var declaredLength = response.Content.Headers.ContentLength;
+                    if (declaredLength.HasValue && declaredLength.Value > MaxResponseBytes)
+                        throw new OpButtonException("Server response exceeds 2 MiB");
+                    string responseBody;
+                    using (var input = response.Content.ReadAsStreamAsync().GetAwaiter().GetResult())
+                    using (var output = new MemoryStream())
                     {
-                        var errorJson = SimpleJson.Parse(responseBody);
-                        string parsedDetail = errorJson.GetString("detail");
-                        if (parsedDetail != null) detail = parsedDetail;
+                        var buffer = new byte[8192];
+                        int read;
+                        while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            if (output.Length + read > MaxResponseBytes)
+                                throw new OpButtonException("Server response exceeds 2 MiB");
+                            output.Write(buffer, 0, read);
+                        }
+                        responseBody = Encoding.UTF8.GetString(output.ToArray());
                     }
-                    catch { }
 
-                    throw new OpButtonException((int)response.StatusCode,
-                        "HTTP " + (int)response.StatusCode + ": " + detail);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        string detail = responseBody;
+                        try
+                        {
+                            var errorJson = SimpleJson.Parse(responseBody);
+                            string parsedDetail = errorJson.GetString("detail");
+                            if (parsedDetail != null) detail = parsedDetail;
+                        }
+                        catch { }
+
+                        throw new OpButtonException((int)response.StatusCode,
+                            "HTTP " + (int)response.StatusCode + ": " + detail);
+                    }
+
+                    if (string.IsNullOrEmpty(responseBody))
+                        return new SimpleJson();
+
+                    return SimpleJson.Parse(responseBody);
                 }
-
-                if (string.IsNullOrEmpty(responseBody))
-                    return new SimpleJson();
-
-                return SimpleJson.Parse(responseBody);
             }
             catch (OpButtonException)
             {
