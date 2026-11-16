@@ -14,6 +14,7 @@ namespace OpButton.SDK
     {
         private readonly string m_baseUrl;
         private readonly string m_apiToken;
+        private readonly string m_runId = Guid.NewGuid().ToString("D");
         private readonly HttpClient m_http;
 
         internal OpButtonHttpClient(string baseUrl, string apiToken, HttpMessageHandler handler = null)
@@ -39,7 +40,8 @@ namespace OpButton.SDK
             var body = new Dictionary<string, object>
             {
                 ["device_id"] = deviceId,
-                ["device_name"] = deviceName
+                ["device_name"] = deviceName,
+                ["run_id"] = m_runId
             };
 
             if (sessionAttributes != null && sessionAttributes.Count > 0)
@@ -51,7 +53,7 @@ namespace OpButton.SDK
 
         internal OpButtonConnectResponse PollStatus(string requestId)
         {
-            var request = ApiTokenRequest("/api/client/poll-status/" + requestId, HttpMethod.Get);
+            var request = ApiTokenRequest("/api/client/poll-status/" + requestId + "?run_id=" + m_runId, HttpMethod.Get);
             return OpButtonConnectResponse.FromDict(Execute(request));
         }
 
