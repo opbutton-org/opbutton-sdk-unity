@@ -35,15 +35,29 @@ namespace OpButton.SDK
 
         public OpButtonLayout Vertical()
         {
+            m_layout?.Detach();
+            m_ui.IncrementRevision();
             m_layout = new OpButtonLayout(m_ui, OpButtonLayout.Direction.Vertical);
             return m_layout;
         }
 
         public OpButtonLayout Horizontal()
         {
+            m_layout?.Detach();
+            m_ui.IncrementRevision();
             m_layout = new OpButtonLayout(m_ui, OpButtonLayout.Direction.Horizontal);
             return m_layout;
         }
+
+        public OpButtonLayout Grid()
+        {
+            m_layout?.Detach();
+            m_ui.IncrementRevision();
+            m_layout = new OpButtonLayout(m_ui, OpButtonLayout.Direction.Grid);
+            return m_layout;
+        }
+
+        internal void Detach() { m_layout?.Detach(); }
 
         internal Dictionary<string, object> ToDict()
         {

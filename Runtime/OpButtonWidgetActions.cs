@@ -60,4 +60,28 @@ namespace OpButton.SDK
             Value = action.Payload?.GetString("value", "") ?? "";
         }
     }
+
+    public sealed class OpButtonRadioGroupAction
+    {
+        public OpButtonAction Action { get; }
+        public string Value { get; }
+
+        internal OpButtonRadioGroupAction(OpButtonAction action)
+        {
+            Action = action;
+            Value = action.Payload?.GetString("value", "") ?? "";
+        }
+    }
+
+    public sealed class OpButtonSliderAction
+    {
+        public OpButtonAction Action { get; }
+        public double Value { get; }
+
+        internal OpButtonSliderAction(OpButtonAction action)
+        {
+            Action = action;
+            Value = action.Payload?.GetDouble("value") ?? 0;
+        }
+    }
 }

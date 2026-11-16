@@ -1,6 +1,6 @@
 {
   "name": "com.opbutton.sdk",
-  "version": "1.0.30",
+  "version": "1.0.31",
   "displayName": "OpButton SDK",
   "description": "Remote debug panel, logging, metrics, and live streaming for Unity applications.",
   "unity": "2020.3",

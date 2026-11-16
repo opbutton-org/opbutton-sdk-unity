@@ -30,7 +30,7 @@ namespace OpButton.SDK
         {
             lock (m_lock)
             {
-                m_tabs.RemoveAll(t => t.Title == title);
+                m_tabs.RemoveAll(t => { if (t.Title != title) return false; t.Detach(); return true; });
                 var tab = new OpButtonTab(this, title);
                 m_tabs.Add(tab);
                 Interlocked.Increment(ref m_revision);
@@ -55,7 +55,7 @@ namespace OpButton.SDK
         {
             lock (m_lock)
             {
-                m_tabs.RemoveAll(t => t.Id == id);
+                m_tabs.RemoveAll(t => { if (t.Id != id) return false; t.Detach(); return true; });
                 Interlocked.Increment(ref m_revision);
             }
         }

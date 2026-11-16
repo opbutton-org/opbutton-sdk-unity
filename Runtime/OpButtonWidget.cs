@@ -11,10 +11,8 @@ namespace OpButton.SDK
     /// Base class for all OpButton UI widgets.
     /// Stores properties as a dictionary for direct serialization.
     /// </summary>
-    public class OpButtonWidget<T> : IOpButtonPolledWidget where T : OpButtonWidget<T>
+    public class OpButtonWidget<T> : OpButtonElement<T>, IOpButtonPolledWidget where T : OpButtonWidget<T>
     {
-        protected readonly OpButtonUI m_ui;
-        protected readonly int m_internalId;
         protected string m_publicId;
         protected readonly string m_type;
         protected readonly Dictionary<string, object> m_json;
@@ -23,10 +21,8 @@ namespace OpButton.SDK
         private OpButtonValueProvider m_provider;
         private string m_cachedValue;
 
-        internal OpButtonWidget(OpButtonUI ui, string type)
+        internal OpButtonWidget(OpButtonUI ui, string type) : base(ui)
         {
-            m_ui = ui;
-            m_internalId = ui.NextId();
             m_publicId = type + "-" + m_internalId;
             m_type = type;
             m_json = new Dictionary<string, object>
@@ -37,7 +33,6 @@ namespace OpButton.SDK
         }
 
         public string Id => m_publicId;
-        public int InternalId => m_internalId;
         public string Type => m_type;
 
         protected void Put(string key, object value)
@@ -82,6 +77,8 @@ namespace OpButton.SDK
             return false;
         }
 
-        internal Dictionary<string, object> ToDict() => m_json;
+        internal override void Detach() { m_ui.UnregisterProvider(this); base.Detach(); }
+
+        internal override Dictionary<string, object> ToDict() => Decorate(m_json);
     }
 }

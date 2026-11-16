@@ -39,7 +39,7 @@ namespace OpButton.SDK
     /// </summary>
     public sealed class OpButtonSDK
     {
-        public const string VERSION = "1.0.30";
+        public const string VERSION = "1.0.31";
 
         private static volatile OpButtonRuntime s_instance;
         private static readonly object s_lock = new object();

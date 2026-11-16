@@ -1,212 +1,171 @@
+using System;
 using System.Collections.Generic;
 
 namespace OpButton.SDK
 {
-    /// <summary>
-    /// A layout container for OpButton UI widgets.
-    /// Supports vertical/horizontal arrangement and nesting.
-    /// </summary>
-    public sealed class OpButtonLayout
+    public sealed class OpButtonLayout : OpButtonElement<OpButtonLayout>
     {
-        public enum Direction
-        {
-            Vertical,
-            Horizontal
-        }
-
-        private readonly OpButtonUI m_ui;
+        public enum Direction { Vertical, Horizontal, Grid }
         private readonly Direction m_direction;
-        private readonly List<object> m_children = new List<object>();
-
-        internal OpButtonLayout(OpButtonUI ui, Direction direction)
-        {
-            m_ui = ui;
-            m_direction = direction;
-        }
-
+        private readonly List<IOpButtonLayoutElement> m_children = new List<IOpButtonLayoutElement>();
+        private readonly Dictionary<string, object> m_settings = new Dictionary<string, object>();
+        internal OpButtonLayout(OpButtonUI ui, Direction direction) : base(ui) { m_direction = direction; }
         public Direction GetDirection() => m_direction;
-
-        // ── Sub-layouts ──
-
-        public OpButtonLayout AddVertical()
+        private OpButtonLayout Option(string key, object value) { m_settings[key] = value; m_ui.IncrementRevision(); return this; }
+        public OpButtonLayout Gap(double pixels) => Option("gap", Dimension(pixels));
+        public OpButtonLayout Padding(double pixels) => Option("padding", Dimension(pixels));
+        public OpButtonLayout Align(string value) => Option("align", Alignment(value));
+        public OpButtonLayout Justify(string value)
         {
-            var sub = new OpButtonLayout(m_ui, Direction.Vertical);
-            m_children.Add(sub);
-            m_ui.IncrementRevision();
-            return sub;
+            if (value != "start" && value != "center" && value != "end" && value != "space-between") throw new ArgumentException("Invalid justification", nameof(value));
+            return Option("justify", value);
         }
-
-        public OpButtonLayout AddHorizontal()
+        public OpButtonLayout Wrap(bool value) => Option("wrap", value);
+        public OpButtonLayout Density(string value)
         {
-            var sub = new OpButtonLayout(m_ui, Direction.Horizontal);
-            m_children.Add(sub);
-            m_ui.IncrementRevision();
-            return sub;
+            if (value != "compact" && value != "comfortable") throw new ArgumentException("Invalid density", nameof(value));
+            return Option("density", value);
         }
-
-        public OpButtonLayout AddCollapsible(string title)
+        public OpButtonLayout Columns(int value)
         {
-            var collapsible = new CollapsibleElement(m_ui, title);
-            m_children.Add(collapsible);
-            m_ui.IncrementRevision();
-            return collapsible.Content;
+            if (value < 1 || value > 12) throw new ArgumentOutOfRangeException(nameof(value));
+            return Option("gridColumns", value);
         }
-
-        // ── Padding ──
-
+        public OpButtonLayout MinCellWidth(double pixels) => Option("minCellWidth", Dimension(pixels, true));
+        public OpButtonLayout Title(string value) => Option("title", value);
+        private OpButtonLayout AddLayout(Direction direction)
+        {
+            var child = new OpButtonLayout(m_ui, direction);
+            m_children.Add(child); m_ui.IncrementRevision(); return child;
+        }
+        public OpButtonLayout AddVertical() => AddLayout(Direction.Vertical);
+        public OpButtonLayout AddHorizontal() => AddLayout(Direction.Horizontal);
+        public OpButtonLayout AddGrid() => AddLayout(Direction.Grid);
+        public OpButtonLayout AddGroup(string title) => AddVertical().Title(title);
         public OpButtonLayout AddPadding(double weight)
         {
-            m_children.Add(new PaddingElement(weight));
-            m_ui.IncrementRevision();
-            return this;
+            m_children.Add(new PaddingElement(m_ui, weight)); m_ui.IncrementRevision(); return this;
         }
-
-        // ── Widgets ──
-
+        public OpButtonLayout AddCollapsible(string title)
+        {
+            var child = new CollapsibleElement(m_ui, title);
+            m_children.Add(child); m_ui.IncrementRevision(); return child.Content;
+        }
         public OpButtonButton AddButton(string label)
         {
-            var w = new OpButtonButton(m_ui, label);
-            m_children.Add(w);
+            var widget = new OpButtonButton(m_ui, label);
+            m_children.Add(widget);
             m_ui.IncrementRevision();
-            return w;
+            return widget;
         }
 
-        public OpButtonLabel AddLabel(string text)
+        public OpButtonLabel AddLabel(string label)
         {
-            var w = new OpButtonLabel(m_ui, text);
-            m_children.Add(w);
+            var widget = new OpButtonLabel(m_ui, label);
+            m_children.Add(widget);
             m_ui.IncrementRevision();
-            return w;
+            return widget;
         }
 
         public OpButtonStat AddStat(string label)
         {
-            var w = new OpButtonStat(m_ui, label);
-            m_children.Add(w);
+            var widget = new OpButtonStat(m_ui, label);
+            m_children.Add(widget);
             m_ui.IncrementRevision();
-            return w;
+            return widget;
         }
 
         public OpButtonSwitch AddSwitch(string label)
         {
-            var w = new OpButtonSwitch(m_ui, label);
-            m_children.Add(w);
+            var widget = new OpButtonSwitch(m_ui, label);
+            m_children.Add(widget);
             m_ui.IncrementRevision();
-            return w;
+            return widget;
         }
 
         public OpButtonInput AddInput(string label)
         {
-            var w = new OpButtonInput(m_ui, label);
-            m_children.Add(w);
+            var widget = new OpButtonInput(m_ui, label);
+            m_children.Add(widget);
             m_ui.IncrementRevision();
-            return w;
+            return widget;
         }
 
         public OpButtonSelect AddSelect(string label)
         {
-            var w = new OpButtonSelect(m_ui, label);
-            m_children.Add(w);
+            var widget = new OpButtonSelect(m_ui, label);
+            m_children.Add(widget);
             m_ui.IncrementRevision();
-            return w;
+            return widget;
         }
 
         public OpButtonTextarea AddTextarea(string label)
         {
-            var w = new OpButtonTextarea(m_ui, label);
-            m_children.Add(w);
+            var widget = new OpButtonTextarea(m_ui, label);
+            m_children.Add(widget);
             m_ui.IncrementRevision();
-            return w;
+            return widget;
         }
 
         public OpButtonTable AddTable(string label)
         {
-            var w = new OpButtonTable(m_ui, label);
-            m_children.Add(w);
+            var widget = new OpButtonTable(m_ui, label);
+            m_children.Add(widget);
             m_ui.IncrementRevision();
-            return w;
+            return widget;
         }
 
         public OpButtonLogs AddLogs(string label)
         {
-            var w = new OpButtonLogs(m_ui, label);
-            m_children.Add(w);
+            var widget = new OpButtonLogs(m_ui, label);
+            m_children.Add(widget);
             m_ui.IncrementRevision();
-            return w;
+            return widget;
         }
 
-        // ── Serialization ──
-
-        internal Dictionary<string, object> ToDict()
+        public OpButtonRadioGroup AddRadioGroup(string label)
         {
-            var childrenList = new List<object>();
-            foreach (var child in m_children)
-            {
-                if (child is OpButtonLayout layout)
-                    childrenList.Add(layout.ToDict());
-                else if (child is PaddingElement padding)
-                    childrenList.Add(padding.ToDict());
-                else if (child is CollapsibleElement collapsible)
-                    childrenList.Add(collapsible.ToDict());
-                else
-                {
-                    // Use reflection-free approach: all widgets derive from OpButtonWidget<T>
-                    var method = child.GetType().GetMethod("ToDict",
-                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-                    if (method != null)
-                        childrenList.Add(method.Invoke(child, null));
-                }
-            }
+            var widget = new OpButtonRadioGroup(m_ui, label);
+            m_children.Add(widget);
+            m_ui.IncrementRevision();
+            return widget;
+        }
 
-            return new Dictionary<string, object>
-            {
-                ["type"] = "layout",
-                ["direction"] = m_direction == Direction.Vertical ? "vertical" : "horizontal",
-                ["children"] = childrenList
+        public OpButtonSlider AddSlider(string label)
+        {
+            var widget = new OpButtonSlider(m_ui, label);
+            m_children.Add(widget);
+            m_ui.IncrementRevision();
+            return widget;
+        }
+
+        internal override void Detach() { foreach (var child in m_children) child.Detach(); base.Detach(); }
+
+        internal override Dictionary<string, object> ToDict()
+        {
+            var json = new Dictionary<string, object>(m_settings) {
+                ["type"] = "layout", ["direction"] = m_direction.ToString().ToLowerInvariant()
             };
+            var children = new List<object>();
+            foreach (var child in m_children) children.Add(child.ToDict());
+            json["children"] = children;
+            return Decorate(json);
         }
-
-        // ── Padding helper ──
-
-        private sealed class PaddingElement
+        private sealed class PaddingElement : OpButtonElement<PaddingElement>
         {
-            public readonly double Weight;
-
-            public PaddingElement(double weight) { Weight = weight; }
-
-            public Dictionary<string, object> ToDict()
-            {
-                return new Dictionary<string, object>
-                {
-                    ["type"] = "padding",
-                    ["weight"] = Weight
-                };
-            }
+            private readonly double m_weight;
+            internal PaddingElement(OpButtonUI ui, double weight) : base(ui) { m_weight = weight; }
+            internal override Dictionary<string, object> ToDict() => Decorate(new Dictionary<string, object> { ["type"] = "padding", ["weight"] = m_weight });
         }
-
-        // ── Collapsible helper ──
-
-        private sealed class CollapsibleElement
+        private sealed class CollapsibleElement : OpButtonElement<CollapsibleElement>
         {
-            public readonly string Title;
-            public readonly OpButtonLayout Content;
-
-            public CollapsibleElement(OpButtonUI ui, string title)
-            {
-                Title = title;
-                Content = new OpButtonLayout(ui, Direction.Vertical);
-            }
-
-            public Dictionary<string, object> ToDict()
-            {
-                var contentDict = Content.ToDict();
-                return new Dictionary<string, object>
-                {
-                    ["type"] = "collapsible",
-                    ["title"] = Title,
-                    ["children"] = contentDict.ContainsKey("children") ? contentDict["children"] : new List<object>()
-                };
-            }
+            private readonly string m_title;
+            internal override void Detach() { Content.Detach(); base.Detach(); }
+            internal readonly OpButtonLayout Content;
+            internal CollapsibleElement(OpButtonUI ui, string title) : base(ui) { m_title = title; Content = new OpButtonLayout(ui, Direction.Vertical); }
+            internal override Dictionary<string, object> ToDict() => Decorate(new Dictionary<string, object> {
+                ["type"] = "collapsible", ["title"] = m_title, ["children"] = new List<object> { Content.ToDict() }
+            });
         }
     }
 }

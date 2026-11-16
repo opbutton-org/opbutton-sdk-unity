@@ -170,3 +170,35 @@ Providers are evaluated on each SDK poll cycle. The SDK only sends updates to th
 ---
 
 **See also:** [Unity Integration](unity-integration.md) · [Logging & Events](logging.md) · [Metrics](metrics.md)
+
+## Retained layout options
+
+Elements receive generated IDs automatically. Layout edits preserve IDs; removing
+or replacing a tree detaches its callbacks and providers. Serialize tree edits on
+the host UI thread. The SDK ID counter itself is thread-safe.
+
+Rows and columns support gap, padding, align, justify, wrap and inherited density.
+Use a grid for equal-width commands: columns is the maximum column count, and
+minCellWidth allows automatic reduction on narrow panels. Placement supports
+content width, numeric width, fill with a weight, minimum/maximum width and
+alignSelf. Dimensions are dashboard CSS pixels. Radio options stay in one group;
+slider changes are sent on release/keyboard commit, with a numeric value.
+
+Install the updated backend and dashboard before using these extensions. Protocol
+version 2 remains compatible with existing panels. Optional public ID aliases
+retain their existing meaning and are unnecessary for creating elements.
+
+```csharp
+var root = ui.AddTab("Game").Vertical().Gap(12).Padding(8);
+var commands = root.AddGrid().Columns(3).MinCellWidth(140).Gap(8);
+commands.AddButton("Restart");
+commands.AddButton("Clear logs");
+var row = root.AddHorizontal().Gap(8).Align("end");
+row.AddSelect("Language").Options(new[] { new[] { "en", "English" }, new[] { "ru", "Русский" } })
+    .DefaultValue("en").Fill().MinWidth(160);
+row.AddButton("Apply").Width(120);
+root.AddRadioGroup("Difficulty").Options(new[] { new[] { "easy", "Easy" }, new[] { "hard", "Hard" } })
+    .DefaultValue("easy").OptionDirection("horizontal");
+root.AddSlider("Speed").Range(0.5, 3, 0.1).DefaultValue(1).Unit("x").Fill()
+    .OnChange((OpButtonSliderAction action) => SetSpeed(action.Value));
+```
